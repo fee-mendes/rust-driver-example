@@ -1,8 +1,8 @@
 # rust-driver-example
 
-This repo contains 3 simple Rust programs that are meant to demonstrate [https://github.com/scylladb/scylla-rust-driver/](ScyllaDB's Rust driver capabilities).
+This repo contains 3 simple Rust programs that are meant to demonstrate [ScyllaDB's Rust driver capabilities](https://github.com/scylladb/scylla-rust-driver/).
 
-Ensure to follow the [https://cvybhu.github.io/scyllabook/index.html](Driver documentation) in order to get familiarity with it.
+Ensure to follow the [Driver documentation](https://cvybhu.github.io/scyllabook/index.html) in order to get familiarity with it.
 
 All 3 programs are related to each other. The purpose of these programs is to demonstrate how to use the various capabilities around Scylla Rust driver by simulating a simple IOT workload scenario.
 
