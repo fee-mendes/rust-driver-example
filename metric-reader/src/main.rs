@@ -1,37 +1,35 @@
 #![allow(warnings, unused)]
-use chrono::{DateTime, TimeZone, NaiveDateTime, Utc};
 use chrono::NaiveDate;
-use std::env;
-use std::process;
-use std::{thread, time};
-use std::sync::Arc;
-use std::time::Duration;
-use std::error::Error;
-use scylla::IntoTypedRows;
+use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
+use rand::Rng;
 use scylla::frame::value::Timestamp;
-use scylla::{Session, SessionBuilder};
-use scylla::transport::Compression;
-use scylla::statement::Consistency;
 use scylla::frame::value::ValueList;
 use scylla::prepared_statement::PreparedStatement;
-use scylla::transport::retry_policy::DefaultRetryPolicy;
+use scylla::statement::Consistency;
 use scylla::transport::load_balancing::{DcAwareRoundRobinPolicy, TokenAwarePolicy};
+use scylla::transport::retry_policy::DefaultRetryPolicy;
+use scylla::transport::Compression;
+use scylla::IntoTypedRows;
+use scylla::{Session, SessionBuilder};
+use std::env;
+use std::error::Error;
+use std::process;
+use std::sync::Arc;
+use std::time::Duration;
+use std::{thread, time};
 use tokio::sync::Semaphore;
-use rand::Rng;
 use uuid::Uuid;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-
     // Simple argparse
 
     let args: Vec<String> = env::args().collect();
 
     if args.len() < 4 {
-      eprintln!("usage: <host> <dc> <ks> <table>");
-      process::exit(1);
+        eprintln!("usage: <host> <dc> <ks> <table>");
+        process::exit(1);
     }
-
 
     let host = &args[1];
     let dc = &args[2];
@@ -44,20 +42,19 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let policy = Arc::new(TokenAwarePolicy::new(dc_robin));
 
     let session: Session = SessionBuilder::new()
-                           .known_node(host)
-                           .load_balancing(policy)
-                           .compression(Some(Compression::Lz4))
-                           .user("cassandra", "cassandra")
-                           .build()
-                           .await?;
+        .known_node(host)
+        .load_balancing(policy)
+        .compression(Some(Compression::Lz4))
+        .user("cassandra", "cassandra")
+        .build()
+        .await?;
     let session = Arc::new(session);
 
     println!("Connected successfully! Policy: TokenAware(DCAware())");
 
-
     // Set-up full table scan token ranges, shards and nodes
 
-    let min_token = - (i128::pow(2, 63) - 1);
+    let min_token = -(i128::pow(2, 63) - 1);
     let max_token = (i128::pow(2, 63) - 1);
     println!("Min token: {} \nMax token: {}", min_token, max_token);
 
@@ -70,11 +67,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Subrange is a division applied to our token ring. How many queries we'll send in total ?
     let SUBRANGE = PARALLEL * 1000;
 
-    println!("Max Parallel queries: {}\nToken-ring Subranges:{}", PARALLEL, SUBRANGE);
+    println!(
+        "Max Parallel queries: {}\nToken-ring Subranges:{}",
+        PARALLEL, SUBRANGE
+    );
 
     // How many tokens are there?
-    let total_token = max_token - min_token; 
-    println!("Total tokens: {}", total_token); 
+    let total_token = max_token - min_token;
+    println!("Total tokens: {}", total_token);
 
     // Chunk size determines the number of iterations needed to query the whole token ring
     let chunk_size = total_token / SUBRANGE;
@@ -82,11 +82,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // Prepare Statement - use LocalQuorum
     let stmt = format!("SELECT device, COUNT(device) AS total FROM {}.{} WHERE token(device) >= ? AND token(device) <= ? BYPASS CACHE", ks, table);
-    let mut ps: PreparedStatement = session
-                                .prepare(stmt).await?;
+    let mut ps: PreparedStatement = session.prepare(stmt).await?;
     ps.set_consistency(Consistency::LocalQuorum);
 
-    // Retry policy 
+    // Retry policy
     ps.set_retry_policy(Box::new(DefaultRetryPolicy::new()));
 
     println!();
@@ -98,8 +97,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mut device_count = 0;
 
     // Initiate querying the token ring
-    for x in (min_token..max_token).step_by((chunk_size as usize)){
-
+    for x in (min_token..max_token).step_by((chunk_size as usize)) {
         let session = session.clone();
         let ps = ps.clone();
         let permit = sem.clone().acquire_owned().await;
@@ -109,18 +107,18 @@ async fn main() -> Result<(), Box<dyn Error>> {
         // This will return exact SUBRANGES numbers ;-)
         // println!("Querying: {} to {}", v[0], v[1]);
         tokio::task::spawn(async move {
-		if let Some(query_result) = session.execute(&ps, (&v[0], &v[1])).await.unwrap().rows {
-		   for row in query_result {
-		       if row.columns[0] != None {
-			  let typed_row = row.into_typed::<(Uuid, i64)>();
-			  let (device, metric_num) = typed_row.unwrap();
-			  device_count += 1;
-			  count += metric_num;
-			  println!("Found device {} - Rows: {}", device, count);
-		       }
-		   }
-		}
-                let _permit = permit;
+            if let Some(query_result) = session.execute(&ps, (&v[0], &v[1])).await.unwrap().rows {
+                for row in query_result {
+                    if row.columns[0] != None {
+                        let typed_row = row.into_typed::<(Uuid, i64)>();
+                        let (device, metric_num) = typed_row.unwrap();
+                        device_count += 1;
+                        count += metric_num;
+                        println!("Found device {} - Rows: {}", device, count);
+                    }
+                }
+            }
+            let _permit = permit;
         });
     }
 
@@ -130,10 +128,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 
     // Won't work with tokio - but works without it (runs slower :-)
-    // 
+    //
     // println!("Total number of devices found: {}", device_count);
     // println!("Aggregated number of records: {}", count);
-
 
     // Print final metrics
     let metrics = session.get_metrics();
@@ -142,9 +139,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     println!("Errors occured: {}", metrics.get_errors_num());
     println!("Iter errors occured: {}", metrics.get_errors_iter_num());
     println!("Average latency: {}", metrics.get_latency_avg_ms().unwrap());
-    println!("99.9 latency percentile: {}",
-             metrics.get_latency_percentile_ms(99.9).unwrap());
+    println!(
+        "99.9 latency percentile: {}",
+        metrics.get_latency_percentile_ms(99.9).unwrap()
+    );
 
     Ok(())
 }
-

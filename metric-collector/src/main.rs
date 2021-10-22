@@ -1,22 +1,22 @@
 #![allow(warnings, unused)]
-use chrono::{DateTime, TimeZone, NaiveDateTime, Utc};
 use chrono::NaiveDate;
+use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
+use rand::Rng;
+use scylla::frame::value::Timestamp;
+use scylla::prepared_statement::PreparedStatement;
+use scylla::statement::Consistency;
+use scylla::transport::load_balancing::{DcAwareRoundRobinPolicy, TokenAwarePolicy};
+use scylla::transport::retry_policy::DefaultRetryPolicy;
+use scylla::transport::Compression;
+use scylla::IntoTypedRows;
+use scylla::{Session, SessionBuilder};
 use std::env;
+use std::error::Error;
 use std::process;
-use std::{thread, time};
 use std::sync::Arc;
 use std::time::Duration;
-use std::error::Error;
-use scylla::IntoTypedRows;
-use scylla::frame::value::Timestamp;
-use scylla::{Session, SessionBuilder};
-use scylla::transport::Compression;
-use scylla::statement::Consistency;
-use scylla::prepared_statement::PreparedStatement;
-use scylla::transport::retry_policy::DefaultRetryPolicy;
-use scylla::transport::load_balancing::{DcAwareRoundRobinPolicy, TokenAwarePolicy};
+use std::{thread, time};
 use tokio::sync::Semaphore;
-use rand::Rng;
 use uuid::Uuid;
 
 const DAYS: i64 = 3; // Number of days we want to collect
@@ -28,25 +28,19 @@ const PARALLEL: usize = 2048; // Concurrency,
 
 // UUID struct
 pub const NAMESPACE_UUID: Uuid = Uuid::from_bytes([
-    0xff, 0xff, 0xff, 0xff, 
-    0xff, 0xff, 0xff, 0xff, 
-    0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00,
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 ]);
-
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-
     // Simple argparse
 
     let args: Vec<String> = env::args().collect();
 
     if args.len() < 4 {
-      eprintln!("usage: <host> <dc> <ks> <table>");
-      process::exit(1);
+        eprintln!("usage: <host> <dc> <ks> <table>");
+        process::exit(1);
     }
-
 
     let host = &args[1];
     let dc = &args[2];
@@ -59,12 +53,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let policy = Arc::new(TokenAwarePolicy::new(dc_robin));
 
     let session: Session = SessionBuilder::new()
-                           .known_node(host)
-                           .load_balancing(policy)
-                           .compression(Some(Compression::Lz4))
-                           .user("cassandra", "cassandra")
-                           .build()
-                           .await?;
+        .known_node(host)
+        .load_balancing(policy)
+        .compression(Some(Compression::Lz4))
+        .user("cassandra", "cassandra")
+        .build()
+        .await?;
     let session = Arc::new(session);
 
     println!("Connected successfully! Policy: TokenAware(DCAware())");
@@ -78,25 +72,28 @@ async fn main() -> Result<(), Box<dyn Error>> {
                            AND compaction = {{'class': 'TimeWindowCompactionStrategy', 'compaction_window_size': 3}}", ks, table);
     session.query(cf_stmt, &[]).await?;
 
-
     println!("Keyspace and Table processing is complete");
 
-
     // Stealing from Adam -- Check for Schema Agreement
-    if session.await_timed_schema_agreement(Duration::from_secs(5)).await? {
-       println!("Schema is in agreement - Proceeding");
+    if session
+        .await_timed_schema_agreement(Duration::from_secs(5))
+        .await?
+    {
+        println!("Schema is in agreement - Proceeding");
     } else {
-       println!("Schema is NOT in agreement - Stop processing");
-       process::exit(1);
+        println!("Schema is NOT in agreement - Stop processing");
+        process::exit(1);
     }
 
     // Prepare Statement - use LocalQuorum
-    let stmt = format!("INSERT INTO {}.{} (device, ts, temperature) VALUES (?, ?, ?)", ks, table);
-    let mut ps: PreparedStatement = session
-                                .prepare(stmt).await?;
+    let stmt = format!(
+        "INSERT INTO {}.{} (device, ts, temperature) VALUES (?, ?, ?)",
+        ks, table
+    );
+    let mut ps: PreparedStatement = session.prepare(stmt).await?;
     ps.set_consistency(Consistency::LocalQuorum);
 
-    // Retry policy 
+    // Retry policy
     ps.set_retry_policy(Box::new(DefaultRetryPolicy::new()));
 
     println!();
@@ -109,18 +106,18 @@ async fn main() -> Result<(), Box<dyn Error>> {
         // let uuid = Uuid::new_v4();
 
         // Consistent UUIDs per device in v5
-        let uuid = Uuid::new_v5(&NAMESPACE_UUID, &[device]); 
+        let uuid = Uuid::new_v5(&NAMESPACE_UUID, &[device]);
 
         // 1. Start writing at January 1st, 2020 00:00 UTC
         // 2. Retrieve epoch and cast to i64
         // 3. Retrieve the total samples we want to record
-        let start_dt = DateTime::<Utc>::from_utc(NaiveDate::from_ymd(2020, 1, 1).and_hms(0, 0, 0), Utc);    
+        let start_dt =
+            DateTime::<Utc>::from_utc(NaiveDate::from_ymd(2020, 1, 1).and_hms(0, 0, 0), Utc);
         let mut dt = i64::from(start_dt.timestamp());
         let total_samples: i64 = SAMPLES * DAYS;
 
         // Concurrently write total_samples to cluster
         for write in 1..=total_samples {
-            
             let session = session.clone();
             let ps = ps.clone();
             let permit = sem.clone().acquire_owned().await;
@@ -129,12 +126,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
             let temperature = (temperature * 100.0).round() / 100.0;
 
             tokio::task::spawn(async move {
-               session.execute(&ps, (uuid, dt * 1000, temperature)).await.unwrap();
+                session
+                    .execute(&ps, (uuid, dt * 1000, temperature))
+                    .await
+                    .unwrap();
 
-               let _permit = permit;
+                let _permit = permit;
             });
             dt = dt + REPORT;
-
         }
     }
 
@@ -150,8 +149,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     println!("Errors occured: {}", metrics.get_errors_num());
     println!("Iter errors occured: {}", metrics.get_errors_iter_num());
     println!("Average latency: {}", metrics.get_latency_avg_ms().unwrap());
-    println!("99.9 latency percentile: {}",
-             metrics.get_latency_percentile_ms(99.9).unwrap());
+    println!(
+        "99.9 latency percentile: {}",
+        metrics.get_latency_percentile_ms(99.9).unwrap()
+    );
 
     Ok(())
 }
