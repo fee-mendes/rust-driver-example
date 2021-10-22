@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "metric-collector",
+    "metric-reader",
+    "uuid_finder",
+]
