@@ -20,24 +20,60 @@ use std::{thread, time};
 use tokio::sync::Semaphore;
 use uuid::Uuid;
 
+fn help() {
+    println!("usage: <uuid> <start> <end> <host> <dc>");
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     // Simple argparse
 
     let args: Vec<String> = env::args().collect();
 
-    if args.len() < 7 {
-        eprintln!("usage: <host> <dc> <ks> <table> <uuid> <start_date> <end_date>");
-        process::exit(1);
-    }
+    let mut host = "127.0.0.1";
+    let mut dc = "datacenter1";
+    let mut start_date = "2020-01-01 00:00:00";
+    let mut end_date = "2020-01-04 00:00:00";
+    let mut uuid_search = "ab914a61-47d9-5c89-99b7-cb4b5acb3d31";
+    let ks = "iot";
+    let table = "device";
 
-    let host = &args[1];
-    let dc = &args[2];
-    let ks = &args[3];
-    let table = &args[4];
-    let uuid_search = &args[5];
-    let start_date = &args[6];
-    let end_date = &args[7];
+    match args.len() {
+        1 => {
+            println!(
+                "Using default values.\nHost: {}, DC: {}\nDevice: {}\nStart date: {}\nEnd date: {}",
+                host, dc, uuid_search, start_date, end_date
+            );
+        }
+        2 => {
+            uuid_search = &args[1];
+        }
+        3 => {
+            uuid_search = &args[1];
+            start_date = &args[2];
+        }
+        4 => {
+            uuid_search = &args[1];
+            start_date = &args[2];
+            end_date = &args[3];
+        }
+        5 => {
+            uuid_search = &args[1];
+            start_date = &args[2];
+            end_date = &args[3];
+            host = &args[4];
+        }
+        6 => {
+            uuid_search = &args[1];
+            start_date = &args[2];
+            end_date = &args[3];
+            host = &args[4];
+            dc = &args[5];
+        }
+        _ => {
+            help();
+        }
+    }
 
     // Convert dates, ensure UTC TZ
     let naive_start = NaiveDateTime::parse_from_str(start_date, "%Y-%m-%d %H:%M:%S").unwrap();

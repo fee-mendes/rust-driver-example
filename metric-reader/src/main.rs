@@ -20,21 +20,37 @@ use std::{thread, time};
 use tokio::sync::Semaphore;
 use uuid::Uuid;
 
+fn help() {
+    println!("usage: <host> <dc>");
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     // Simple argparse
 
     let args: Vec<String> = env::args().collect();
 
-    if args.len() < 4 {
-        eprintln!("usage: <host> <dc> <ks> <table>");
-        process::exit(1);
+    let mut host = "127.0.0.1";
+    let mut dc = "datacenter1";
+
+    match args.len() {
+        1 => {
+            println!("Using default values. Host: {}, DC: {}", host, dc);
+        }
+        2 => {
+            host = &args[1];
+        }
+        3 => {
+            host = &args[1];
+            dc = &args[2];
+        }
+        _ => {
+            help();
+        }
     }
 
-    let host = &args[1];
-    let dc = &args[2];
-    let ks = &args[3];
-    let table = &args[4];
+    let ks = "iot";
+    let table = "device";
 
     // Initiate cluster session
     println!("Connecting to {} ...", host);
