@@ -25,9 +25,13 @@ usage: <host> <dc>
 - **uuid_finder** is a program which demonstrates how to use the MAX, MIN and AVG functions for a specific device uuid while filtering by a given clustering key via inequality clauses. The following parameters are accepted and are optional: 
 
 `<uuid>`  - The device UUID you want to query for (defaults to `ab914a61-47d9-5c89-99b7-cb4b5acb3d31`)
+
 `<start>` - The start time to retrieve the given device metrics in `YYYY-mm-dd HH:MM:ss` format. (defaults to `2020-01-01 00:00:00`)
+
 `<end>`   - Same as `<start>`, but up to which date to query (defaults to `2020-01-04 00:00:00`)
+
 `<host>`  - Defaults to `127.0.0.1`
+
 `<dc>`    - Defaults to `datacenter1`
 
 For example, to query for metrics of a given device within the period of 23 hours you could use:
