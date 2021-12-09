@@ -15,6 +15,33 @@ $ cargo run --bin metric-collector <host> <dc>
 usage: <host> <dc> 
 ```
 
+After the **metric-collector** script is run, it will automatically create a KEYSPACE and TABLE under the following structure:
+
+```
+CREATE KEYSPACE iot WITH replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': '1'}  AND durable_writes = true;
+
+CREATE TABLE iot.device (
+    device uuid,
+    ts timestamp,
+    temperature float,
+    PRIMARY KEY (device, ts)
+) WITH CLUSTERING ORDER BY (ts ASC)
+    AND bloom_filter_fp_chance = 0.01
+    AND caching = {'keys': 'ALL', 'rows_per_partition': 'ALL'}
+    AND comment = ''
+    AND compaction = {'class': 'TimeWindowCompactionStrategy', 'compaction_window_size': '3'}
+    AND compression = {'sstable_compression': 'org.apache.cassandra.io.compress.LZ4Compressor'}
+    AND crc_check_chance = 1.0
+    AND dclocal_read_repair_chance = 0.0
+    AND default_time_to_live = 2592000
+    AND gc_grace_seconds = 864000
+    AND max_index_interval = 2048
+    AND memtable_flush_period_in_ms = 0
+    AND min_index_interval = 128
+    AND read_repair_chance = 0.0
+    AND speculative_retry = '99.0PERCENTILE';
+```
+
 - **metric_reader** demonstrates how to perform a full table scan and, as such, read the data written using the previous example in the best performant way. Similarly as the previous program, the contact point IP and datacenter name can be overriden as:
 
 ```shell
