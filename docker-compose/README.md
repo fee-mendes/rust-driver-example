@@ -19,3 +19,5 @@ UN  172.19.0.3  802.74 KB  256          ?       825b7556-355c-41b7-b0ac-f4008672
 UN  172.19.0.2  620.18 KB  256          ?       c95fe5d0-706f-4f05-aaca-b29facecbab6  rack1
 UN  172.19.0.4  797.4 KB   256          ?       98a3687f-c517-4ba8-acf9-bb22f219da5e  rack1
 ```
+
+Before you run the actual application, you may want to set-up the [https://monitoring.docs.scylladb.com/stable/install/monitoring_stack.html](Scylla Monitoring Stack) to have live insights as you move forward.
