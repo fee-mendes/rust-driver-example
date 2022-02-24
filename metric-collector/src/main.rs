@@ -64,6 +64,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let table = "device";
 
     // Initiate cluster session
+    // We use Token aware DC Aware Round robin in this example
+    // It is also possible to create your own load balancing policy as needed.
     println!("Connecting to {} ...", host);
     let dc_robin = Box::new(DcAwareRoundRobinPolicy::new(dc.to_string()));
     let policy = Arc::new(TokenAwarePolicy::new(dc_robin));
@@ -109,7 +111,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mut ps: PreparedStatement = session.prepare(stmt).await?;
     ps.set_consistency(Consistency::LocalQuorum);
 
-    // Retry policy
+    // Retry policy - the default when not specified 
+    // Another option would be using 'FalthroughRetryPolicy', which effectively never retries
+    // Similarly as the loading balancing policy, it is also possible to implement your own retry policy
     ps.set_retry_policy(Box::new(DefaultRetryPolicy::new()));
 
     println!();
