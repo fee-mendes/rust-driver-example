@@ -72,7 +72,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .known_node(host)
         .load_balancing(policy)
         .compression(Some(Compression::Lz4))
-        .user("cassandra", "cassandra")
+        .user("scylla", "scylla")
         .build()
         .await?;
     let session = Arc::new(session);
