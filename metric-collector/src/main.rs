@@ -92,7 +92,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     println!("Keyspace and Table processing is complete");
 
-    // Stealing from Adam -- Check for Schema Agreement
+    // Check for Schema Agreement
     if session
         .await_timed_schema_agreement(Duration::from_secs(5))
         .await?
