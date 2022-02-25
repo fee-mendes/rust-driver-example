@@ -111,7 +111,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mut ps: PreparedStatement = session.prepare(stmt).await?;
     ps.set_consistency(Consistency::LocalQuorum);
 
-    // Retry policy - the default when not specified 
+    // Retry policy - the default when not specified
     // Another option would be using 'FalthroughRetryPolicy', which effectively never retries
     // Similarly as the loading balancing policy, it is also possible to implement your own retry policy
     ps.set_retry_policy(Box::new(DefaultRetryPolicy::new()));
@@ -121,7 +121,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // 1. Spawn a new semaphore
     // 2. Start ingestion
     let sem = Arc::new(Semaphore::new(PARALLEL));
-    for device in 1..=100 {
+    let num_devices = 100;
+    for device in 1..=num_devices {
+        println!("Generating data for device {}/{}", device, num_devices);
         // Generate an always random UUID
         // let uuid = Uuid::new_v4();
 
