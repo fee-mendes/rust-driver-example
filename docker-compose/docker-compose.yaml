@@ -34,6 +34,14 @@ services:
     cap_add:
       - SYS_NICE
 
+  rust-app:
+    build: .
+    networks:
+      scylla_net:
+        ipv4_address: 172.19.0.10
+    container_name: rust-app
+    hostname: rust-app
+
 networks:
   scylla_net:
     driver: bridge
