@@ -104,11 +104,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 
     // Prepare Statement - use LocalQuorum
+    // Always use Prepared Statements whenever possible
+    // Prepared Statements are a requirement for TokenAware load balancing
     let stmt = format!(
         "INSERT INTO {}.{} (device, ts, temperature) VALUES (?, ?, ?)",
         ks, table
     );
     let mut ps: PreparedStatement = session.prepare(stmt).await?;
+    // LocalQuorum means a majority of replicas need to acknowledge the operation
+    // for it to be considered successful
     ps.set_consistency(Consistency::LocalQuorum);
 
     // Retry policy - the default when not specified
