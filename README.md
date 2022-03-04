@@ -2,7 +2,57 @@
 
 This repo contains 3 simple Rust programs that are meant to demonstrate [ScyllaDB's Rust driver capabilities](https://github.com/scylladb/scylla-rust-driver/).
 
-Ensure to follow the [Driver documentation](https://cvybhu.github.io/scyllabook/index.html) in order to get familiarity with it.
+Minimum requirements:
+- Linux or OSX x86 
+- Docker installed and setup
+- Quadcore CPU
+- 2 GB of memory available
+- Windows is not supported
+
+Setup: 
+
+Clone the repo containing the sample app and start the ScyllaDB docker image:
+
+```
+$ git clone https://github.com/fee-mendes/rust-driver-example/
+$ cd rust-driver-example/docker-compose
+$ docker-compose up -d
+$ docker exec -it rust-app /bin/bash
+```
+
+On successful startup, you will see the following:
+```
+Creating scylladb-02 ... done
+Creating rust-app    ... done
+Creating scylladb-01 ... done
+Creating scylladb-03 ... done
+```
+To check the status, run:
+```
+$ docker-compose logs -f rust-app
+```
+Your Rust environment is now configured to use ScyllaDB. 
+
+Run the metric-collector sample app:
+```
+root@rust-app:/usr/src/rust-driver-example# cargo run --bin metric-collector 172.19.0.2 datacenter1
+```
+You should see data generation and then:
+```
+Queries requested: 86402
+Iter queries requested: 0
+Errors occured: 0
+Iter errors occured: 0
+Average latency: 73
+99.9 latency percentile: 2
+```
+To view the schema anytime, open a new terminal:
+```
+$ cd docker-compose
+$ docker exec -it scylladb-01 cqlsh -e 'DESC SCHEMA;'
+```
+
+Refer to the [Driver documentation](https://cvybhu.github.io/scyllabook/index.html) in order to get familiarity with it.
 
 All 3 programs are related to each other. The purpose of these programs is to demonstrate how to use the various capabilities around Scylla Rust driver by simulating a simple IOT workload scenario.
 
@@ -13,6 +63,11 @@ The keyspace `iot` will automatically be created with `replication_factor: 1`. A
 ```shell
 $ cargo run --bin metric-collector <host> <dc> 
 usage: <host> <dc> 
+```
+
+For example:
+```
+cargo run --bin metric-collector 172.19.0.2 datacenter1
 ```
 
 After the **metric-collector** script is run, it will automatically create a KEYSPACE and TABLE under the following structure:
@@ -47,7 +102,6 @@ CREATE TABLE iot.device (
 ```shell
 $ cargo run --bin metric-reader
 usage: <host> <dc>
-```
 
 - **uuid_finder** is a program which demonstrates how to use the MAX, MIN and AVG functions for a specific device uuid while filtering by a given clustering key via inequality clauses. The following parameters are accepted and are optional: 
 
