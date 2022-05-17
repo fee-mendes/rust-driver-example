@@ -43,10 +43,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let mut host = "127.0.0.1";
     let mut dc = "datacenter1";
+    let mut usr = "scylla";
+    let mut pwd = "scylla";
 
     match args.len() {
         1 => {
-            println!("Using default values. Host: {}, DC: {}", host, dc);
+            println!("Using default values. Host: {}, DC: {}, Username: {}, Password: ********", host, dc, usr);
         }
         2 => {
             host = &args[1];
@@ -54,6 +56,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
         3 => {
             host = &args[1];
             dc = &args[2];
+        }
+        5 => {
+            host = &args[1];
+            dc = &args[2];
+            usr = &args[3];
+            pwd = &args[4];
         }
         _ => {
             help();
@@ -74,7 +82,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .known_node(host)
         .load_balancing(policy)
         .compression(Some(Compression::Lz4))
-        .user("scylla", "scylla")
+        .user(usr, pwd)
         .build()
         .await?;
     let session = Arc::new(session);
