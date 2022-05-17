@@ -32,6 +32,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let mut host = "127.0.0.1";
     let mut dc = "datacenter1";
+    let mut usr = "scylla";
+    let mut pwd = "scylla";
     let mut start_date = "2020-01-01 00:00:00";
     let mut end_date = "2020-01-04 00:00:00";
     let mut uuid_search = "ab914a61-47d9-5c89-99b7-cb4b5acb3d31";
@@ -70,6 +72,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
             host = &args[4];
             dc = &args[5];
         }
+        8 => {
+            uuid_search = &args[1];
+            start_date = &args[2];
+            end_date = &args[3];
+            host = &args[4];
+            dc = &args[5];
+            usr = &args[6];
+            pwd = &args[7];
+        }
         _ => {
             help();
         }
@@ -97,7 +108,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .known_node(host)
         .load_balancing(policy)
         .compression(Some(Compression::Lz4))
-        .user("scylla", "scylla")
+        .user(usr, pwd)
         .build()
         .await?;
     let session = Arc::new(session);
