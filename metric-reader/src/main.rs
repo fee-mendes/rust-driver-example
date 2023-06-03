@@ -6,7 +6,7 @@ use scylla::frame::value::Timestamp;
 use scylla::frame::value::ValueList;
 use scylla::prepared_statement::PreparedStatement;
 use scylla::statement::Consistency;
-use scylla::transport::load_balancing::{DcAwareRoundRobinPolicy, TokenAwarePolicy};
+use scylla::load_balancing::DefaultPolicy;
 use scylla::transport::retry_policy::DefaultRetryPolicy;
 use scylla::transport::Compression;
 use scylla::IntoTypedRows;
@@ -62,12 +62,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // Initiate cluster session
     println!("Connecting to {} ...", host);
-    let dc_robin = Box::new(DcAwareRoundRobinPolicy::new(dc.to_string()));
-    let policy = Arc::new(TokenAwarePolicy::new(dc_robin));
+    let default_policy = DefaultPolicy::builder()
+        .prefer_datacenter(dc.to_string())
+        .token_aware(true)
+        .permit_dc_failover(false)
+        .build();
 
     let session: Session = SessionBuilder::new()
         .known_node(host)
-        .load_balancing(policy)
         .compression(Some(Compression::Lz4))
         .user(usr, pwd)
         .build()
@@ -110,7 +112,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     ps.set_consistency(Consistency::LocalQuorum);
 
     // Retry policy
-    ps.set_retry_policy(Box::new(DefaultRetryPolicy::new()));
+    ps.set_retry_policy(Some(Arc::new(DefaultRetryPolicy::new())));
 
     println!();
 

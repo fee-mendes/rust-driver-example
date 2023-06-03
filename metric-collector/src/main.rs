@@ -5,7 +5,7 @@ use rand::Rng;
 use scylla::frame::value::Timestamp;
 use scylla::prepared_statement::PreparedStatement;
 use scylla::statement::Consistency;
-use scylla::transport::load_balancing::{DcAwareRoundRobinPolicy, TokenAwarePolicy};
+use scylla::load_balancing::DefaultPolicy;
 use scylla::transport::retry_policy::DefaultRetryPolicy;
 use scylla::transport::Compression;
 use scylla::IntoTypedRows;
@@ -75,12 +75,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // We use Token aware DC Aware Round robin in this example
     // It is also possible to create your own load balancing policy as needed.
     println!("Connecting to {} ...", host);
-    let dc_robin = Box::new(DcAwareRoundRobinPolicy::new(dc.to_string()));
-    let policy = Arc::new(TokenAwarePolicy::new(dc_robin));
+    let default_policy = DefaultPolicy::builder()
+        .prefer_datacenter(dc.to_string())
+        .token_aware(true)
+        .permit_dc_failover(false)
+        .build();
 
     let session: Session = SessionBuilder::new()
         .known_node(host)
-        .load_balancing(policy)
         .compression(Some(Compression::Lz4))
         .user(usr, pwd)
         .build()
@@ -126,7 +128,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Retry policy - the default when not specified
     // Another option would be using 'FalthroughRetryPolicy', which effectively never retries
     // Similarly as the loading balancing policy, it is also possible to implement your own retry policy
-    ps.set_retry_policy(Box::new(DefaultRetryPolicy::new()));
+    ps.set_retry_policy(Some(Arc::new(DefaultRetryPolicy::new())));
 
     println!();
 
@@ -140,7 +142,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         // let uuid = Uuid::new_v4();
 
         // Consistent UUIDs per device in v5
-        let uuid = Uuid::new_v5(&NAMESPACE_UUID, &[device]);
+        let uuid: Uuid = Uuid::new_v5(&NAMESPACE_UUID, &[device]);
 
         // 1. Start writing at January 1st, 2020 00:00 UTC
         // 2. Retrieve epoch and cast to i64
@@ -158,6 +160,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             let temperature: f32 = rand::thread_rng().gen_range(-40.0, 50.0);
             // Round to 2 decimal: Multiply by 1e2 and divide by 1e2
             let temperature = (temperature * 100.0).round() / 100.0;
+            // DEBUG println!("{}", uuid);
 
             tokio::task::spawn(async move {
                 session
