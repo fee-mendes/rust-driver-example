@@ -7,7 +7,7 @@ use scylla::frame::value::ValueList;
 use scylla::prepared_statement::PreparedStatement;
 use scylla::statement::Consistency;
 use scylla::load_balancing::DefaultPolicy;
-+use scylla::transport::ExecutionProfile;
+use scylla::transport::ExecutionProfile;
 use scylla::transport::retry_policy::DefaultRetryPolicy;
 use scylla::transport::Compression;
 use scylla::IntoTypedRows;
