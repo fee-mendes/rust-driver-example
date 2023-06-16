@@ -8,6 +8,7 @@ use scylla::frame::value::Timestamp;
 use scylla::prepared_statement::PreparedStatement;
 use scylla::statement::Consistency;
 use scylla::load_balancing::DefaultPolicy;
+use scylla::transport::ExecutionProfile;
 use scylla::transport::retry_policy::DefaultRetryPolicy;
 use scylla::transport::Compression;
 use scylla::IntoTypedRows;
@@ -107,9 +108,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .permit_dc_failover(false)
         .build();
 
+    let profile = ExecutionProfile::builder()
+        .load_balancing_policy(default_policy)
+        .build();
+
+    let handle = profile.into_handle();
 
     let session: Session = SessionBuilder::new()
         .known_node(host)
+        .default_execution_profile_handle(handle)
         .compression(Some(Compression::Lz4))
         .user(usr, pwd)
         .build()
