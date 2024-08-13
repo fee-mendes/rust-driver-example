@@ -2,7 +2,7 @@
 use chrono::NaiveDate;
 use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
 use rand::Rng;
-use scylla::frame::value::Timestamp;
+use scylla::frame::value::CqlTimestamp;
 use scylla::prepared_statement::PreparedStatement;
 use scylla::statement::Consistency;
 use scylla::load_balancing::DefaultPolicy;
@@ -90,6 +90,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let session: Session = SessionBuilder::new()
         .known_node(host)
+        .schema_agreement_interval(Duration::from_secs(5))
+        .auto_await_schema_agreement(true)
         .default_execution_profile_handle(handle)
         .compression(Some(Compression::Lz4))
         .user(usr, pwd)
@@ -112,8 +114,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // Check for Schema Agreement
     if session
-        .await_timed_schema_agreement(Duration::from_secs(5))
-        .await?
+        .check_schema_agreement()
+        .await?.is_some()
     {
         println!("Schema is in agreement - Proceeding");
     } else {
@@ -172,7 +174,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
             tokio::task::spawn(async move {
                 session
-                    .execute(&ps, (uuid, dt * 1000, temperature))
+                    .execute(&ps, (uuid, CqlTimestamp(dt * 1000), temperature))
                     .await
                     .unwrap();
 

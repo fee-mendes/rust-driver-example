@@ -2,7 +2,7 @@
 use chrono::NaiveDate;
 use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
 use rand::Rng;
-use scylla::frame::value::Timestamp;
+use scylla::frame::value::CqlTimestamp;
 use scylla::frame::value::ValueList;
 use scylla::prepared_statement::PreparedStatement;
 use scylla::statement::Consistency;

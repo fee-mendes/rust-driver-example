@@ -4,7 +4,7 @@ use chrono::NaiveDate;
 use chrono::{Date, DateTime, NaiveDateTime, TimeZone, Utc};
 use parse_duration::parse;
 use rand::Rng;
-use scylla::frame::value::Timestamp;
+use scylla::frame::value::CqlTimestamp;
 use scylla::prepared_statement::PreparedStatement;
 use scylla::statement::Consistency;
 use scylla::load_balancing::DefaultPolicy;
@@ -94,10 +94,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let naive_end = NaiveDateTime::parse_from_str(end_date, "%Y-%m-%d %H:%M:%S").unwrap();
     let end = DateTime::<Utc>::from_utc(naive_end, Utc);
 
-    // To Duration (see: https://cvybhu.github.io/scyllabook/data-types/timestamp.html)
-    let to_start: Duration = Duration::seconds(start.timestamp());
-    let to_end: Duration = Duration::seconds(end.timestamp());
-
     let hdr = "===========================================================================================================";
 
     // Initiate cluster session
@@ -161,7 +157,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // Query data
     if let Some(rows) = session
-        .execute(&max_ps, (Timestamp(to_start), Timestamp(to_end)))
+        .execute(&max_ps, (start, end))
         .await?
         .rows
     {
@@ -172,7 +168,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 
     if let Some(rows) = session
-        .execute(&min_ps, (Timestamp(to_start), Timestamp(to_end)))
+        .execute(&min_ps, (start, end))
         .await?
         .rows
     {
@@ -183,7 +179,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 
     if let Some(rows) = session
-        .execute(&avg_ps, (Timestamp(to_start), Timestamp(to_end)))
+        .execute(&avg_ps, (start, end))
         .await?
         .rows
     {
