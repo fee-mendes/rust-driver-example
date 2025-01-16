@@ -102,6 +102,7 @@ CREATE TABLE iot.device (
 ```shell
 $ cargo run --bin metric-reader
 usage: <host> <dc>
+```
 
 - **uuid_finder** is a program which demonstrates how to use the MAX, MIN and AVG functions for a specific device uuid while filtering by a given clustering key via inequality clauses. The following parameters are accepted and are optional: 
 
