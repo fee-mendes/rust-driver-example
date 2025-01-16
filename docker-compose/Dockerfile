@@ -1,4 +1,4 @@
-FROM rust:1.65-buster
+FROM rust:1.84-bullseye
 
 WORKDIR /usr/src
 COPY ./check_cluster_healthy .

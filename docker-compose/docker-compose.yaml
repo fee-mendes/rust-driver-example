@@ -2,7 +2,7 @@ version: '2'
 
 services:
   scylladb-01:
-    image: scylladb/scylla:5.2.2
+    image: scylladb/scylla-enterprise:2024.2
     networks:
       scylla_net:
         ipv4_address: 172.19.0.2
@@ -18,7 +18,7 @@ services:
       - SYS_NICE
 
   scylladb-02:
-    image: scylladb/scylla:5.2.2
+    image: scylladb/scylla-enterprise:2024.2
     networks:
       scylla_net:
         ipv4_address: 172.19.0.3
@@ -38,7 +38,7 @@ services:
 
 
   scylladb-03:
-    image: scylladb/scylla:5.2.2
+    image: scylladb/scylla-enterprise:2024.2
     networks:
       scylla_net:
         ipv4_address: 172.19.0.4
