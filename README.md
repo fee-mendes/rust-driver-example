@@ -3,11 +3,10 @@
 This repo contains 3 simple Rust programs that are meant to demonstrate [ScyllaDB's Rust driver capabilities](https://github.com/scylladb/scylla-rust-driver/).
 
 Minimum requirements:
-- Linux or OSX x86 
+- Linux, MacOS or Windows (Windows might require Docker network tuning)
 - Docker installed and setup
 - Quadcore CPU
 - 2 GB of memory available
-- Windows is not supported
 
 Setup: 
 
@@ -16,7 +15,7 @@ Clone the repo containing the sample app and start the ScyllaDB docker image:
 ```
 $ git clone https://github.com/fee-mendes/rust-driver-example/
 $ cd rust-driver-example/docker-compose
-$ docker-compose up -d
+$ docker compose up -d
 $ docker exec -it rust-app /bin/bash
 ```
 
